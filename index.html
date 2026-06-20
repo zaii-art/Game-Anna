@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guess the Crop</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #FFF4E0;
+    --ink: #2B1B12;
+    --hot-pink: #FF5C8A;
+    --orange: #FF8C42;
+    --yellow: #FFD23F;
+    --green: #4ECDC4;
+    --purple: #9B5DE5;
+    --red: #E63946;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 10% 15%, rgba(255,92,138,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 90% 85%, rgba(78,205,196,0.12) 0%, transparent 40%);
+    font-family: 'Space Mono', monospace;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap {
+    width: 100%;
+    max-width: 480px;
+    padding: 28px 20px 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    justify-content: center;
+  }
+
+  .screen { display: none; width: 100%; flex-direction: column; align-items: center; }
+  .screen.active { display: flex; }
+
+  h1 {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: clamp(26px, 7.5vw, 34px);
+    text-align: center;
+    margin: 4px 0 6px;
+    line-height: 1.1;
+  }
+  h1 span { color: var(--hot-pink); }
+
+  .subtitle {
+    font-size: 13px;
+    opacity: 0.65;
+    text-align: center;
+    margin-bottom: 24px;
+    max-width: 320px;
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    border: 2.5px solid var(--ink);
+    border-radius: 999px;
+    padding: 14px 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--ink);
+    transition: transform 0.1s, box-shadow 0.1s;
+    color: var(--ink);
+    background: var(--yellow);
+  }
+  .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+  .btn-primary { background: var(--hot-pink); color: #fff; }
+  .btn-secondary { background: #fff; }
+  .btn-purple { background: var(--purple); color: #fff; }
+  .btn-row { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 260px; margin-top: 10px; }
+
+  /* Main menu */
+  .menu-icon { font-size: 70px; margin-bottom: 6px; }
+
+  /* Name gate */
+  .name-card {
+    width: 100%;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 24px 22px;
+    box-shadow: 0 5px 0 var(--ink);
+    text-align: center;
+  }
+  .name-input {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    width: 100%;
+    padding: 12px 14px;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    margin: 14px 0;
+    text-align: center;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .name-input:focus { outline: 2px solid var(--purple); }
+  #nameError {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--red);
+    min-height: 20px;
+    margin-bottom: 4px;
+  }
+
+  /* Credit screen */
+  .credit-avatar {
+    width: 100%;
+    max-width: 280px;
+    border-radius: 16px;
+    border: 3px solid var(--ink);
+    object-fit: cover;
+    margin-bottom: 14px;
+    box-shadow: 0 5px 0 var(--ink);
+  }
+  .credit-handle {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 19px;
+    color: var(--hot-pink);
+    margin-bottom: 10px;
+  }
+  .credit-msg {
+    font-size: 13.5px;
+    line-height: 1.6;
+    max-width: 320px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  /* Quiz */
+  .progress-track {
+    width: 100%;
+    height: 8px;
+    background: #f0ebe0;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--yellow), var(--orange), var(--hot-pink));
+    transition: width 0.35s ease-out;
+  }
+
+  .q-eyebrow {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--hot-pink);
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+
+  .crop-frame {
+    width: 100%;
+    max-width: 280px;
+    aspect-ratio: 1 / 1;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 5px 0 var(--ink);
+    margin-bottom: 18px;
+    background: #fff;
+  }
+  .crop-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .q-prompt {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .guess-input {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    width: 100%;
+    max-width: 280px;
+    padding: 13px 16px;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    text-align: center;
+    background: #fff;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .guess-input:focus { outline: 2px solid var(--purple); }
+
+  /* Reveal screen */
+  .reveal-frame {
+    width: 100%;
+    max-width: 280px;
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 5px 0 var(--ink);
+    margin-bottom: 16px;
+  }
+  .reveal-frame img { width: 100%; display: block; }
+
+  .verdict {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .verdict.correct { color: var(--green); }
+  .verdict.wrong { color: var(--red); }
+
+  .reveal-joke {
+    font-size: 13.5px;
+    line-height: 1.6;
+    text-align: center;
+    max-width: 320px;
+    margin-bottom: 20px;
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+
+  /* End screen */
+  .trophy { font-size: 80px; margin-bottom: 6px; }
+  .end-card {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 22px 20px;
+    box-shadow: 0 5px 0 var(--ink);
+    max-width: 340px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .end-card p { font-size: 14px; line-height: 1.6; margin: 0 0 10px; }
+  .end-card p:last-child { margin-bottom: 0; }
+  .score-line {
+    font-family: 'Baloo 2', sans-serif;
+    font-weight: 700;
+    color: var(--purple);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .fade-in { animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- MAIN MENU -->
+  <div class="screen active fade-in" id="screen-menu">
+    <div class="menu-icon">🐾</div>
+    <h1>Guess the <span>Crop</span></h1>
+    <p class="subtitle">A highly scientific test of your animal-recognition skills. Only one rule: no cheating with Google.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goTo('name')">Start</button>
+      <button class="btn btn-secondary" onclick="goTo('exit')">Exit</button>
+    </div>
+  </div>
+
+  <!-- EXIT SCREEN -->
+  <div class="screen" id="screen-exit">
+    <div class="menu-icon">👋</div>
+    <h1>Leaving already?</h1>
+    <p class="subtitle">Bold of you to exit a game made specifically for you. The blob is disappointed. There is no blob in this game, but it would be if there were.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goTo('menu')">Okay fine, back to menu</button>
+    </div>
+  </div>
+
+  <!-- NAME GATE -->
+  <div class="screen" id="screen-name">
+    <h1>Who's <span>playing</span>?</h1>
+    <p class="subtitle">Security checkpoint. State your name.</p>
+    <div class="name-card">
+      <input type="text" class="name-input" id="nameInput" placeholder="Type your name..." autocomplete="off">
+      <div id="nameError"></div>
+      <button class="btn btn-primary" onclick="checkName()">Confirm</button>
+    </div>
+  </div>
+
+  <!-- CREDIT SCREEN -->
+  <div class="screen" id="screen-credit">
+    <h1>Before we <span>start</span>...</h1>
+    <img class="credit-avatar" id="creditAvatar" src="" alt="creator avatar">
+    <div class="credit-handle">@crazyszai</div>
+    <div class="credit-msg" id="creditMsg"></div>
+    <button class="btn btn-purple" onclick="goTo('q1')">Let's play, Anna</button>
+  </div>
+
+  <!-- QUESTION SCREENS (1-3) -->
+  <div class="screen" id="screen-q1">
+    <div class="progress-track"><div class="progress-fill" id="pf1" style="width:0%"></div></div>
+    <div class="q-eyebrow">ROUND 1 OF 3</div>
+    <div class="crop-frame"><img id="cropImg1" src="" alt="mystery crop"></div>
+    <div class="q-prompt">Guess the OTHER animal mixed into this creature 👀</div>
+    <input type="text" class="guess-input" id="guessInput1" placeholder="type your guess..." autocomplete="off">
+    <button class="btn btn-primary" onclick="submitGuess(1)">Lock it in</button>
+  </div>
+
+  <div class="screen" id="screen-reveal1">
+    <div class="q-eyebrow">ROUND 1 REVEAL</div>
+    <div class="reveal-frame"><img id="revealImg1" src="" alt="full mashup"></div>
+    <div class="verdict" id="verdict1"></div>
+    <div class="reveal-joke" id="joke1"></div>
+    <button class="btn btn-primary" onclick="goTo('q2')">Next round</button>
+  </div>
+
+  <div class="screen" id="screen-q2">
+    <div class="progress-track"><div class="progress-fill" id="pf2" style="width:33%"></div></div>
+    <div class="q-eyebrow">ROUND 2 OF 3</div>
+    <div class="crop-frame"><img id="cropImg2" src="" alt="mystery crop"></div>
+    <div class="q-prompt">Guess the OTHER animal mixed into this creature 👀</div>
+    <input type="text" class="guess-input" id="guessInput2" placeholder="type your guess..." autocomplete="off">
+    <button class="btn btn-primary" onclick="submitGuess(2)">Lock it in</button>
+  </div>
+
+  <div class="screen" id="screen-reveal2">
+    <div class="q-eyebrow">ROUND 2 REVEAL</div>
+    <div class="reveal-frame"><img id="revealImg2" src="" alt="full mashup"></div>
+    <div class="verdict" id="verdict2"></div>
+    <div class="reveal-joke" id="joke2"></div>
+    <button class="btn btn-primary" onclick="goTo('q3')">Next round</button>
+  </div>
+
+  <div class="screen" id="screen-q3">
+    <div class="progress-track"><div class="progress-fill" id="pf3" style="width:66%"></div></div>
+    <div class="q-eyebrow">ROUND 3 OF 3</div>
+    <div class="crop-frame"><img id="cropImg3" src="" alt="mystery crop"></div>
+    <div class="q-prompt">Guess the OTHER animal mixed into this creature 👀</div>
+    <input type="text" class="guess-input" id="guessInput3" placeholder="type your guess..." autocomplete="off">
+    <button class="btn btn-primary" onclick="submitGuess(3)">Lock it in</button>
+  </div>
+
+  <div class="screen" id="screen-reveal3">
+    <div class="q-eyebrow">ROUND 3 REVEAL</div>
+    <div class="reveal-frame"><img id="revealImg3" src="" alt="full mashup"></div>
+    <div class="verdict" id="verdict3"></div>
+    <div class="reveal-joke" id="joke3"></div>
+    <button class="btn btn-primary" onclick="goTo('end')">See my results</button>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="screen" id="screen-end">
+    <div class="trophy">🏆</div>
+    <h1>That's a <span>wrap</span>, Anna!</h1>
+    <div class="end-card">
+      <p class="score-line" id="finalScore">You got 0/3 right.</p>
+      <p id="endLine"></p>
+    </div>
+    <button class="btn btn-secondary" onclick="restartGame()">Play again</button>
+  </div>
+
+</div>
+
+<script>
+const IMG_FULL_CAT = "images/full-cat.jpg";
+const IMG_FULL_GIRAFFE = "images/full-giraffe.jpg";
+const IMG_FULL_PENGUIN = "images/full-penguin.jpg";
+const IMG_CROP_CAT_PAWS = "images/crop-cat-paws.jpg";
+const IMG_CROP_GIRAFFE_EARS = "images/crop-giraffe-ears.jpg";
+const IMG_CROP_PENGUIN_FEET = "images/crop-penguin-feet.jpg";
+const IMG_IG_FULL = "images/ig-profile.jpg";
+
+const correctAnswers = {
+    1: ["Michael Jackson", "michael jackson", "Michadel jackson"],
+    2: ["Lebron James", "Lebron james", "lebron james"],
+    3: ["Charlie Kirk", "Charlie"]
+  };
+
+  const jokes = {
+    1: {
+      correct: "Correct! Yo it's Michael Jackson ur pretty smart huh",
+      wrong: "nah its'Michael Jackson ur idol, u thought billie huh"
+    },
+    2: {
+      correct: "Nailed it! its Lebron James lets gooo",
+      wrong: "ur cooked its'Lebron james, not today bruh"
+    },
+    3: {
+      correct: "Yes! U sillu smart",
+      wrong: "It was a Charlie Kirk, u tought its ariana grande huh."
+    }
+  };
+
+  let score = 0;
+
+  let nameLoopCount = 0;
+
+  function goTo(screen) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + screen);
+    target.classList.add('active');
+    target.classList.remove('fade-in');
+    requestAnimationFrame(() => target.classList.add('fade-in'));
+
+    if (screen === 'name') {
+      document.getElementById('nameInput').value = '';
+      document.getElementById('nameError').textContent = '';
+      setTimeout(() => document.getElementById('nameInput').focus(), 100);
+    }
+  }
+
+  function checkName() {
+    const val = document.getElementById('nameInput').value.trim().toLowerCase();
+    const errorEl = document.getElementById('nameError');
+
+    if (val === 'anna') {
+      goTo('credit');
+    } else if (val === '') {
+      errorEl.textContent = "...you have to actually type something.";
+    } else {
+      nameLoopCount++;
+      const lines = [
+        "I know that's not your real name.",
+        "Nice try. Still not your real name.",
+        "The system remains unconvinced.",
+        "We both know who you are. Type it.",
+        "This is getting kind of impressive, honestly. Still wrong though."
+      ];
+      errorEl.textContent = lines[Math.min(nameLoopCount - 1, lines.length - 1)];
+    }
+  }
+
+  function normalizeGuess(str) {
+    return str.trim().toLowerCase();
+  }
+
+  function submitGuess(qNum) {
+    const input = document.getElementById('guessInput' + qNum);
+    const guess = normalizeGuess(input.value);
+    const isCorrect = correctAnswers[qNum].includes(guess);
+
+    if (isCorrect) score++;
+
+    const verdictEl = document.getElementById('verdict' + qNum);
+    const jokeEl = document.getElementById('joke' + qNum);
+
+    if (isCorrect) {
+      verdictEl.textContent = "✅ Correct!";
+      verdictEl.className = 'verdict correct';
+      jokeEl.textContent = jokes[qNum].correct;
+    } else {
+      verdictEl.textContent = "❌ Not quite!";
+      verdictEl.className = 'verdict wrong';
+      jokeEl.textContent = jokes[qNum].wrong;
+    }
+
+    goTo('reveal' + qNum);
+
+    if (qNum === 3) {
+      document.getElementById('finalScore').textContent = `You got ${score}/3 right.`;
+      const endLines = [
+        "A flawless run. The animals never stood a chance.",
+        "Solid effort. The cat in the rooster head is still impressed.",
+        "Honestly the score doesn't matter — you played a game I made just for you, and that's the real win."
+      ];
+      const endLineEl = document.getElementById('endLine');
+      if (score === 3) endLineEl.textContent = endLines[0];
+      else if (score >= 1) endLineEl.textContent = endLines[1];
+      else endLineEl.textContent = endLines[2];
+    }
+  }
+
+  function restartGame() {
+    score = 0;
+    nameLoopCount = 0;
+    [1,2,3].forEach(n => {
+      document.getElementById('guessInput' + n).value = '';
+    });
+    goTo('menu');
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('nameInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') checkName();
+    });
+    [1,2,3].forEach(n => {
+      document.getElementById('guessInput' + n).addEventListener('keypress', e => {
+        if (e.key === 'Enter') submitGuess(n);
+      });
+    });
+  });
+
+  // Load images into the DOM
+  document.getElementById('creditAvatar').src = IMG_IG_FULL;
+  document.getElementById('cropImg1').src = IMG_CROP_CAT_PAWS;
+  document.getElementById('revealImg1').src = IMG_FULL_CAT;
+  document.getElementById('cropImg2').src = IMG_CROP_GIRAFFE_EARS;
+  document.getElementById('revealImg2').src = IMG_FULL_GIRAFFE;
+  document.getElementById('cropImg3').src = IMG_CROP_PENGUIN_FEET;
+  document.getElementById('revealImg3').src = IMG_FULL_PENGUIN;
+
+  document.getElementById('creditMsg').textContent = "I made this whole ridiculous game from scratch just to make you laugh. No big deal. (It was kind of a big deal.) Hope it worked.";
+</script>
+</body>
+</html>
